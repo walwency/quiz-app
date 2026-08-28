@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class Room {
     private String code;
+    private String hostSessionId;
     private Map<String, Player> players = new ConcurrentHashMap<>();
     private List<Question> questions = new ArrayList<>();
     private int currentQuestionIndex = -1;

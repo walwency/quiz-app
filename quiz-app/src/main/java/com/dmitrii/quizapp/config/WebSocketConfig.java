@@ -1,5 +1,6 @@
 package com.dmitrii.quizapp.config;
 
+import com.dmitrii.quizapp.websocket.QuizWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -9,15 +10,15 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final EchoHandler echoHandler;
+    private final QuizWebSocketHandler quizWebSocketHandler;
 
-    public WebSocketConfig(EchoHandler echoHandler) {
-        this.echoHandler = echoHandler;
+    public WebSocketConfig(QuizWebSocketHandler quizWebSocketHandler) {
+        this.quizWebSocketHandler = quizWebSocketHandler;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(echoHandler, "/ws/echo")
+        registry.addHandler(quizWebSocketHandler, "/ws/quiz")
                 .setAllowedOrigins("*");
     }
 }

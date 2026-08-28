@@ -13,9 +13,10 @@ public class RoomService {
 
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
-    public Room createRoom() {
+    public Room createRoom(String hostSessionId) {
         String code = generateRoomCode();
         Room room = new Room(code);
+        room.setHostSessionId(hostSessionId);
         rooms.put(code, room);
         return room;
     }
