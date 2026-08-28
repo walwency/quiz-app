@@ -13,4 +13,5 @@ public class IncomingMessage {
     private String questionText;
     private List<String> options;
     private Integer correctOptionIndex;
+    private Integer selectedOptionIndex;
 }

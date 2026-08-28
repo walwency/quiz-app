@@ -1,5 +1,6 @@
 package com.dmitrii.quizapp.websocket;
 
+import com.dmitrii.quizapp.dto.AnswerResult;
 import com.dmitrii.quizapp.dto.IncomingMessage;
 import com.dmitrii.quizapp.dto.OutgoingMessage;
 import com.dmitrii.quizapp.model.Player;
@@ -38,6 +39,7 @@ public class QuizWebSocketHandler extends TextWebSocketHandler {
             case "JOIN_ROOM" -> handleJoinRoom(session, incoming);
             case "ADD_QUESTION" -> handleAddQuestion(session, incoming);
             case "START_GAME" -> handleStartGame(session, incoming);
+            case "SUBMIT_ANSWER" -> handleSubmitAnswer(session, incoming);
             default -> sendError(session, "Unknown message type: " + incoming.getType());
         }
     }
@@ -108,6 +110,25 @@ public class QuizWebSocketHandler extends TextWebSocketHandler {
                     "questionText", question.getText()
             )));
         } catch (IllegalArgumentException e) {
+            sendError(session, e.getMessage());
+        }
+    }
+    private void handleSubmitAnswer(WebSocketSession session, IncomingMessage incoming) throws IOException {
+        try {
+            AnswerResult result = roomService.submitAnswer(
+                    incoming.getRoomCode(), session.getId(), incoming.getSelectedOptionIndex());
+
+            send(session, new OutgoingMessage("ANSWER_RESULT", Map.of(
+                    "correct", result.correct(),
+                    "pointsEarned", result.pointsEarned(),
+                    "totalScore", result.totalScore()
+            )));
+
+            Room room = roomService.getRoom(incoming.getRoomCode());
+            sendIfOpen(room.getHostSessionId(), new OutgoingMessage("PLAYER_ANSWERED", Map.of(
+                    "playerName", result.playerName()
+            )));
+        } catch (IllegalArgumentException | IllegalStateException e) {
             sendError(session, e.getMessage());
         }
     }
