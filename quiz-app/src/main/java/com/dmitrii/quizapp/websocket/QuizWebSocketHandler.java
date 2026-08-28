@@ -3,6 +3,7 @@ package com.dmitrii.quizapp.websocket;
 import com.dmitrii.quizapp.dto.IncomingMessage;
 import com.dmitrii.quizapp.dto.OutgoingMessage;
 import com.dmitrii.quizapp.model.Player;
+import com.dmitrii.quizapp.model.Question;
 import com.dmitrii.quizapp.model.Room;
 import com.dmitrii.quizapp.service.RoomService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,8 @@ public class QuizWebSocketHandler extends TextWebSocketHandler {
         switch (incoming.getType()) {
             case "CREATE_ROOM" -> handleCreateRoom(session);
             case "JOIN_ROOM" -> handleJoinRoom(session, incoming);
+            case "ADD_QUESTION" -> handleAddQuestion(session, incoming);
+            case "START_GAME" -> handleStartGame(session, incoming);
             default -> sendError(session, "Unknown message type: " + incoming.getType());
         }
     }
@@ -91,5 +94,42 @@ public class QuizWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         activeSessions.remove(session.getId());
+    }
+    private void handleAddQuestion(WebSocketSession session, IncomingMessage incoming) throws IOException {
+        try {
+            Question question = new Question();
+            question.setText(incoming.getQuestionText());
+            question.setOptions(incoming.getOptions());
+            question.setCorrectOptionIndex(incoming.getCorrectOptionIndex());
+
+            roomService.addQuestion(incoming.getRoomCode(), question);
+
+            send(session, new OutgoingMessage("QUESTION_ADDED", Map.of(
+                    "questionText", question.getText()
+            )));
+        } catch (IllegalArgumentException e) {
+            sendError(session, e.getMessage());
+        }
+    }
+
+    private void handleStartGame(WebSocketSession session, IncomingMessage incoming) throws IOException {
+        try {
+            roomService.startGame(incoming.getRoomCode());
+            Room room = roomService.getRoom(incoming.getRoomCode());
+
+            broadcastCurrentQuestion(room);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            sendError(session, e.getMessage());
+        }
+    }
+
+    private void broadcastCurrentQuestion(Room room) throws IOException {
+        Question question = room.getCurrentQuestion();
+
+        broadcastToRoom(room, new OutgoingMessage("NEW_QUESTION", Map.of(
+                "questionText", question.getText(),
+                "options", question.getOptions(),
+                "questionIndex", room.getCurrentQuestionIndex()
+        )));
     }
 }
